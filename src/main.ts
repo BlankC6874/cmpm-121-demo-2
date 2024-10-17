@@ -20,11 +20,13 @@ const ctx = canvas.getContext("2d")!;
 let drawing = false;
 let lines: { x: number, y: number }[][] = [];
 let currentLine: { x: number, y: number }[] = [];
+let redoStack: { x: number, y: number }[][] = [];
 
 canvas.addEventListener("mousedown", () => {
     drawing = true;
     currentLine = [];
     lines.push(currentLine);
+    redoStack = []; // Clear redo stack on new drawing
 });
 
 canvas.addEventListener("mouseup", () => {
@@ -66,5 +68,38 @@ clearButton.textContent = "Clear";
 clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     lines = [];
+    redoStack = [];
+    const drawingChangedEvent = new Event("drawing-changed");
+    canvas.dispatchEvent(drawingChangedEvent);
 });
 app.appendChild(clearButton);
+
+// Create and add the undo button
+const undoButton = document.createElement("button");
+undoButton.textContent = "Undo";
+undoButton.addEventListener("click", () => {
+    if (lines.length > 0) {
+        const lastLine = lines.pop();
+        if (lastLine) {
+            redoStack.push(lastLine);
+        }
+        const drawingChangedEvent = new Event("drawing-changed");
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
+});
+app.appendChild(undoButton);
+
+// Create and add the redo button
+const redoButton = document.createElement("button");
+redoButton.textContent = "Redo";
+redoButton.addEventListener("click", () => {
+    if (redoStack.length > 0) {
+        const lastLine = redoStack.pop();
+        if (lastLine) {
+            lines.push(lastLine);
+        }
+        const drawingChangedEvent = new Event("drawing-changed");
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
+});
+app.appendChild(redoButton);
