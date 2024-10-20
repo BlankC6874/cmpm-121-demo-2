@@ -18,14 +18,39 @@ app.appendChild(canvas);
 
 const ctx = canvas.getContext("2d")!;
 let drawing = false;
-let lines: { x: number, y: number }[][] = [];
-let currentLine: { x: number, y: number }[] = [];
-let redoStack: { x: number, y: number }[][] = [];
+let lines: MarkerLine[] = [];
+let redoStack: MarkerLine[] = [];
 
-canvas.addEventListener("mousedown", () => {
+class MarkerLine {
+    private points: { x: number, y: number }[] = [];
+
+    constructor(initialX: number, initialY: number) {
+        this.points.push({ x: initialX, y: initialY });
+    }
+
+    drag(x: number, y: number) {
+        this.points.push({ x, y });
+    }
+
+    display(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        this.points.forEach((point, index) => {
+            if (index === 0) {
+                ctx.moveTo(point.x, point.y);
+            } else {
+                ctx.lineTo(point.x, point.y);
+            }
+        });
+        ctx.stroke();
+    }
+}
+
+canvas.addEventListener("mousedown", (event) => {
     drawing = true;
-    currentLine = [];
-    lines.push(currentLine);
+    const x = event.clientX - canvas.offsetLeft;
+    const y = event.clientY - canvas.offsetTop;
+    const newLine = new MarkerLine(x, y);
+    lines.push(newLine);
     redoStack = []; // Clear redo stack on new drawing
 });
 
@@ -38,7 +63,8 @@ canvas.addEventListener("mousemove", (event) => {
     if (!drawing) return;
     const x = event.clientX - canvas.offsetLeft;
     const y = event.clientY - canvas.offsetTop;
-    currentLine.push({ x, y });
+    const currentLine = lines[lines.length - 1];
+    currentLine.drag(x, y);
     const drawingChangedEvent = new Event("drawing-changed");
     canvas.dispatchEvent(drawingChangedEvent);
 });
@@ -49,17 +75,7 @@ canvas.addEventListener("drawing-changed", () => {
     ctx.lineCap = "round";
     ctx.strokeStyle = "black";
 
-    lines.forEach(line => {
-        ctx.beginPath();
-        line.forEach((point, index) => {
-            if (index === 0) {
-                ctx.moveTo(point.x, point.y);
-            } else {
-                ctx.lineTo(point.x, point.y);
-            }
-        });
-        ctx.stroke();
-    });
+    lines.forEach(line => line.display(ctx));
 });
 
 // Create and add the clear button
