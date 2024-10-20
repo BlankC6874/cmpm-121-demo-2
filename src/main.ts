@@ -20,12 +20,15 @@ const ctx = canvas.getContext("2d")!;
 let drawing = false;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
+let currentLineWidth = 5; // Default line width
 
 class MarkerLine {
     private points: { x: number, y: number }[] = [];
+    private lineWidth: number;
 
-    constructor(initialX: number, initialY: number) {
+    constructor(initialX: number, initialY: number, lineWidth: number) {
         this.points.push({ x: initialX, y: initialY });
+        this.lineWidth = lineWidth;
     }
 
     drag(x: number, y: number) {
@@ -34,6 +37,7 @@ class MarkerLine {
 
     display(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
+        ctx.lineWidth = this.lineWidth;
         this.points.forEach((point, index) => {
             if (index === 0) {
                 ctx.moveTo(point.x, point.y);
@@ -49,7 +53,7 @@ canvas.addEventListener("mousedown", (event) => {
     drawing = true;
     const x = event.clientX - canvas.offsetLeft;
     const y = event.clientY - canvas.offsetTop;
-    const newLine = new MarkerLine(x, y);
+    const newLine = new MarkerLine(x, y, currentLineWidth);
     lines.push(newLine);
     redoStack = []; // Clear redo stack on new drawing
 });
@@ -71,7 +75,6 @@ canvas.addEventListener("mousemove", (event) => {
 
 canvas.addEventListener("drawing-changed", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.lineWidth = 5;
     ctx.lineCap = "round";
     ctx.strokeStyle = "black";
 
@@ -119,3 +122,32 @@ redoButton.addEventListener("click", () => {
     }
 });
 app.appendChild(redoButton);
+
+// Create and add the thin marker button
+const thinButton = document.createElement("button");
+thinButton.textContent = "Thin";
+thinButton.addEventListener("click", () => {
+    currentLineWidth = 2;
+    updateSelectedTool(thinButton);
+});
+app.appendChild(thinButton);
+
+// Create and add the thick marker button
+const thickButton = document.createElement("button");
+thickButton.textContent = "Thick";
+thickButton.addEventListener("click", () => {
+    currentLineWidth = 10;
+    updateSelectedTool(thickButton);
+});
+app.appendChild(thickButton);
+
+// Function to update the selected tool button
+function updateSelectedTool(selectedButton: HTMLButtonElement) {
+    document.querySelectorAll("button").forEach(button => {
+        button.classList.remove("selectedTool");
+    });
+    selectedButton.classList.add("selectedTool");
+}
+
+// Initial tool selection
+updateSelectedTool(thinButton);
