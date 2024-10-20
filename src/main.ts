@@ -20,7 +20,9 @@ const ctx = canvas.getContext("2d")!;
 let drawing = false;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
-let currentLineWidth = 5; // Default line width
+const brushSizes = [2, 5, 10]; // Define brush sizes
+let currentBrushSizeLevel = 1; // Default to the middle size
+let toolPreview: ToolPreview | null = null;
 
 class MarkerLine {
     private points: { x: number, y: number }[] = [];
@@ -49,11 +51,35 @@ class MarkerLine {
     }
 }
 
+class ToolPreview {
+    private x: number;
+    private y: number;
+    private lineWidth: number;
+
+    constructor(x: number, y: number, lineWidth: number) {
+        this.x = x;
+        this.y = y;
+        this.lineWidth = lineWidth;
+    }
+
+    updatePosition(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+
+    draw(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.lineWidth / 2, 0, Math.PI * 2);
+        ctx.strokeStyle = "gray";
+        ctx.stroke();
+    }
+}
+
 canvas.addEventListener("mousedown", (event) => {
     drawing = true;
     const x = event.clientX - canvas.offsetLeft;
     const y = event.clientY - canvas.offsetTop;
-    const newLine = new MarkerLine(x, y, currentLineWidth);
+    const newLine = new MarkerLine(x, y, brushSizes[currentBrushSizeLevel]);
     lines.push(newLine);
     redoStack = []; // Clear redo stack on new drawing
 });
@@ -64,13 +90,22 @@ canvas.addEventListener("mouseup", () => {
 });
 
 canvas.addEventListener("mousemove", (event) => {
-    if (!drawing) return;
     const x = event.clientX - canvas.offsetLeft;
     const y = event.clientY - canvas.offsetTop;
-    const currentLine = lines[lines.length - 1];
-    currentLine.drag(x, y);
-    const drawingChangedEvent = new Event("drawing-changed");
-    canvas.dispatchEvent(drawingChangedEvent);
+    if (!drawing) {
+        if (!toolPreview) {
+            toolPreview = new ToolPreview(x, y, brushSizes[currentBrushSizeLevel]);
+        } else {
+            toolPreview.updatePosition(x, y);
+        }
+        const toolMovedEvent = new Event("tool-moved");
+        canvas.dispatchEvent(toolMovedEvent);
+    } else {
+        const currentLine = lines[lines.length - 1];
+        currentLine.drag(x, y);
+        const drawingChangedEvent = new Event("drawing-changed");
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
 });
 
 canvas.addEventListener("drawing-changed", () => {
@@ -79,6 +114,17 @@ canvas.addEventListener("drawing-changed", () => {
     ctx.strokeStyle = "black";
 
     lines.forEach(line => line.display(ctx));
+});
+
+canvas.addEventListener("tool-moved", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "black";
+
+    lines.forEach(line => line.display(ctx));
+    if (toolPreview) {
+        toolPreview.draw(ctx);
+    }
 });
 
 // Create and add the clear button
@@ -127,7 +173,9 @@ app.appendChild(redoButton);
 const thinButton = document.createElement("button");
 thinButton.textContent = "Thin";
 thinButton.addEventListener("click", () => {
-    currentLineWidth = 2;
+    if (currentBrushSizeLevel > 0) {
+        currentBrushSizeLevel--;
+    }
     updateSelectedTool(thinButton);
 });
 app.appendChild(thinButton);
@@ -136,7 +184,9 @@ app.appendChild(thinButton);
 const thickButton = document.createElement("button");
 thickButton.textContent = "Thick";
 thickButton.addEventListener("click", () => {
-    currentLineWidth = 10;
+    if (currentBrushSizeLevel < brushSizes.length - 1) {
+        currentBrushSizeLevel++;
+    }
     updateSelectedTool(thickButton);
 });
 app.appendChild(thickButton);
