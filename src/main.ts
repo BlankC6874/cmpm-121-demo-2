@@ -25,14 +25,17 @@ const brushSizes = [1, 3, 7]; // Adjusted brush sizes
 let currentBrushSizeLevel = 1; // Default to the middle size
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
+let currentColor: string = getRandomColor();
 
 class DoodleLine {
     private points: { x: number, y: number }[] = [];
     private lineWidth: number;
+    private color: string;
 
-    constructor(initialX: number, initialY: number, lineWidth: number) {
+    constructor(initialX: number, initialY: number, lineWidth: number, color: string) {
         this.points.push({ x: initialX, y: initialY });
         this.lineWidth = lineWidth;
+        this.color = color;
     }
 
     drag(x: number, y: number) {
@@ -42,6 +45,7 @@ class DoodleLine {
     display(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         ctx.lineWidth = this.lineWidth;
+        ctx.strokeStyle = this.color;
         this.points.forEach((point, index) => {
             if (index === 0) {
                 ctx.moveTo(point.x, point.y);
@@ -80,12 +84,14 @@ class ToolPreview {
     private y: number;
     private lineWidth: number;
     private sticker: string | null;
+    private color: string;
 
-    constructor(x: number, y: number, lineWidth: number, sticker: string | null) {
+    constructor(x: number, y: number, lineWidth: number, sticker: string | null, color: string) {
         this.x = x;
         this.y = y;
         this.lineWidth = lineWidth;
         this.sticker = sticker;
+        this.color = color;
     }
 
     updatePosition(x: number, y: number) {
@@ -97,6 +103,10 @@ class ToolPreview {
         this.sticker = sticker;
     }
 
+    updateColor(color: string) {
+        this.color = color;
+    }
+
     draw(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         if (this.sticker) {
@@ -104,7 +114,7 @@ class ToolPreview {
             ctx.fillText(this.sticker, this.x, this.y);
         } else {
             ctx.arc(this.x, this.y, this.lineWidth / 2, 0, Math.PI * 2);
-            ctx.strokeStyle = "gray";
+            ctx.strokeStyle = this.color;
             ctx.stroke();
         }
     }
@@ -119,7 +129,7 @@ canvas.addEventListener("mousedown", (event) => {
         stickers.push(newSticker);
         redoStack = []; // Clear redo stack on new drawing
     } else {
-        const newLine = new DoodleLine(x, y, brushSizes[currentBrushSizeLevel]);
+        const newLine = new DoodleLine(x, y, brushSizes[currentBrushSizeLevel], currentColor);
         lines.push(newLine);
         redoStack = []; // Clear redo stack on new drawing
     }
@@ -135,10 +145,11 @@ canvas.addEventListener("mousemove", (event) => {
     const y = event.clientY - canvas.offsetTop;
     if (!drawing) {
         if (!toolPreview) {
-            toolPreview = new ToolPreview(x, y, brushSizes[currentBrushSizeLevel], currentSticker);
+            toolPreview = new ToolPreview(x, y, brushSizes[currentBrushSizeLevel], currentSticker, currentColor);
         } else {
             toolPreview.updatePosition(x, y);
             toolPreview.updateSticker(currentSticker);
+            toolPreview.updateColor(currentColor);
         }
         const toolMovedEvent = new Event("tool-moved");
         canvas.dispatchEvent(toolMovedEvent);
@@ -158,7 +169,6 @@ canvas.addEventListener("mousemove", (event) => {
 canvas.addEventListener("drawing-changed", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
 
     lines.forEach(line => line.display(ctx));
     stickers.forEach(sticker => sticker.display(ctx));
@@ -167,7 +177,6 @@ canvas.addEventListener("drawing-changed", () => {
 canvas.addEventListener("tool-moved", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
 
     lines.forEach(line => line.display(ctx));
     stickers.forEach(sticker => sticker.display(ctx));
@@ -234,6 +243,7 @@ thinButton.addEventListener("click", () => {
         currentBrushSizeLevel--;
     }
     currentSticker = null;
+    currentColor = getRandomColor();
     updateSelectedTool(thinButton);
 });
 app.appendChild(thinButton);
@@ -246,6 +256,7 @@ thickButton.addEventListener("click", () => {
         currentBrushSizeLevel++;
     }
     currentSticker = null;
+    currentColor = getRandomColor();
     updateSelectedTool(thickButton);
 });
 app.appendChild(thickButton);
@@ -261,6 +272,7 @@ function createStickerButtons() {
         stickerButton.textContent = sticker;
         stickerButton.addEventListener("click", () => {
             currentSticker = sticker;
+            currentColor = getRandomColor();
             updateSelectedTool(stickerButton);
             const toolMovedEvent = new Event("tool-moved");
             canvas.dispatchEvent(toolMovedEvent);
@@ -283,6 +295,7 @@ customStickerButton.addEventListener("click", () => {
         stickerButton.textContent = customSticker;
         stickerButton.addEventListener("click", () => {
             currentSticker = customSticker;
+            currentColor = getRandomColor();
             updateSelectedTool(stickerButton);
             const toolMovedEvent = new Event("tool-moved");
             canvas.dispatchEvent(toolMovedEvent);
@@ -326,6 +339,16 @@ function updateSelectedTool(selectedButton: HTMLButtonElement) {
         button.classList.remove("selectedTool");
     });
     selectedButton.classList.add("selectedTool");
+}
+
+// Function to get a random color
+function getRandomColor(): string {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
 }
 
 // Initial tool selection
