@@ -252,7 +252,7 @@ app.appendChild(thickButton);
 
 // Initial set of stickers
 const initialStickers = ["😀", "🌟", "❤️"];
-let stickersList = [...initialStickers];
+const stickersList = [...initialStickers];
 
 // Function to create sticker buttons
 function createStickerButtons() {
