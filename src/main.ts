@@ -292,6 +292,34 @@ customStickerButton.addEventListener("click", () => {
 });
 app.appendChild(customStickerButton);
 
+// Create and add the export button
+const exportButton = document.createElement("button");
+exportButton.textContent = "Export";
+exportButton.addEventListener("click", () => {
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = 1024;
+    exportCanvas.height = 1024;
+    const exportCtx = exportCanvas.getContext("2d")!;
+    exportCtx.scale(4, 4); // Scale to 4x
+
+    // Redraw all items on the new canvas
+    lines.forEach(line => line.display(exportCtx));
+    stickers.forEach(sticker => sticker.display(exportCtx));
+
+    // Trigger download
+    exportCanvas.toBlob((blob) => {
+        if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "sticker_sketchpad.png";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    });
+});
+app.appendChild(exportButton);
+
 // Function to update the selected tool button
 function updateSelectedTool(selectedButton: HTMLButtonElement) {
     document.querySelectorAll("button").forEach(button => {
