@@ -18,15 +18,15 @@ app.appendChild(canvas);
 
 const ctx = canvas.getContext("2d")!;
 let drawing = false;
-let lines: MarkerLine[] = [];
-let stickers: Sticker[] = [];
-let redoStack: (MarkerLine | Sticker)[] = [];
-const brushSizes = [2, 5, 10]; // Define brush sizes
+let lines: DoodleLine[] = [];
+let stickers: Emoji[] = [];
+let redoStack: (DoodleLine | Emoji)[] = [];
+const brushSizes = [1, 3, 7]; // Adjusted brush sizes
 let currentBrushSizeLevel = 1; // Default to the middle size
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
 
-class MarkerLine {
+class DoodleLine {
     private points: { x: number, y: number }[] = [];
     private lineWidth: number;
 
@@ -53,7 +53,7 @@ class MarkerLine {
     }
 }
 
-class Sticker {
+class Emoji {
     private x: number;
     private y: number;
     private sticker: string;
@@ -70,7 +70,7 @@ class Sticker {
     }
 
     display(ctx: CanvasRenderingContext2D) {
-        ctx.font = "24px Arial";
+        ctx.font = "30px Arial"; // Adjusted emoji size
         ctx.fillText(this.sticker, this.x, this.y);
     }
 }
@@ -100,7 +100,7 @@ class ToolPreview {
     draw(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         if (this.sticker) {
-            ctx.font = "24px Arial";
+            ctx.font = "30px Arial"; // Adjusted emoji size
             ctx.fillText(this.sticker, this.x, this.y);
         } else {
             ctx.arc(this.x, this.y, this.lineWidth / 2, 0, Math.PI * 2);
@@ -115,11 +115,11 @@ canvas.addEventListener("mousedown", (event) => {
     const x = event.clientX - canvas.offsetLeft;
     const y = event.clientY - canvas.offsetTop;
     if (currentSticker) {
-        const newSticker = new Sticker(x, y, currentSticker);
+        const newSticker = new Emoji(x, y, currentSticker);
         stickers.push(newSticker);
         redoStack = []; // Clear redo stack on new drawing
     } else {
-        const newLine = new MarkerLine(x, y, brushSizes[currentBrushSizeLevel]);
+        const newLine = new DoodleLine(x, y, brushSizes[currentBrushSizeLevel]);
         lines.push(newLine);
         redoStack = []; // Clear redo stack on new drawing
     }
@@ -215,9 +215,9 @@ redoButton.textContent = "Redo";
 redoButton.addEventListener("click", () => {
     if (redoStack.length > 0) {
         const lastItem = redoStack.pop();
-        if (lastItem instanceof MarkerLine) {
+        if (lastItem instanceof DoodleLine) {
             lines.push(lastItem);
-        } else if (lastItem instanceof Sticker) {
+        } else if (lastItem instanceof Emoji) {
             stickers.push(lastItem);
         }
         const drawingChangedEvent = new Event("drawing-changed");
@@ -251,7 +251,7 @@ thickButton.addEventListener("click", () => {
 app.appendChild(thickButton);
 
 // Initial set of stickers
-const initialStickers = ["😀", "🌟", "❤️"];
+const initialStickers = ["😀", "🌟", "❤️", "🔥", "🎉"]; // Adjusted example emojis
 const stickersList = [...initialStickers];
 
 // Function to create sticker buttons
