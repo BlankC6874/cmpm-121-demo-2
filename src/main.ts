@@ -250,19 +250,47 @@ thickButton.addEventListener("click", () => {
 });
 app.appendChild(thickButton);
 
-// Create and add sticker buttons
-const stickersList = ["😀", "🌟", "❤️"];
-stickersList.forEach(sticker => {
-    const stickerButton = document.createElement("button");
-    stickerButton.textContent = sticker;
-    stickerButton.addEventListener("click", () => {
-        currentSticker = sticker;
-        updateSelectedTool(stickerButton);
-        const toolMovedEvent = new Event("tool-moved");
-        canvas.dispatchEvent(toolMovedEvent);
+// Initial set of stickers
+const initialStickers = ["😀", "🌟", "❤️"];
+let stickersList = [...initialStickers];
+
+// Function to create sticker buttons
+function createStickerButtons() {
+    stickersList.forEach(sticker => {
+        const stickerButton = document.createElement("button");
+        stickerButton.textContent = sticker;
+        stickerButton.addEventListener("click", () => {
+            currentSticker = sticker;
+            updateSelectedTool(stickerButton);
+            const toolMovedEvent = new Event("tool-moved");
+            canvas.dispatchEvent(toolMovedEvent);
+        });
+        app.appendChild(stickerButton);
     });
-    app.appendChild(stickerButton);
+}
+
+// Create and add sticker buttons
+createStickerButtons();
+
+// Create and add the custom sticker button
+const customStickerButton = document.createElement("button");
+customStickerButton.textContent = "Custom Sticker";
+customStickerButton.addEventListener("click", () => {
+    const customSticker = prompt("Enter your custom sticker:", "🎨");
+    if (customSticker) {
+        stickersList.push(customSticker);
+        const stickerButton = document.createElement("button");
+        stickerButton.textContent = customSticker;
+        stickerButton.addEventListener("click", () => {
+            currentSticker = customSticker;
+            updateSelectedTool(stickerButton);
+            const toolMovedEvent = new Event("tool-moved");
+            canvas.dispatchEvent(toolMovedEvent);
+        });
+        app.appendChild(stickerButton);
+    }
 });
+app.appendChild(customStickerButton);
 
 // Function to update the selected tool button
 function updateSelectedTool(selectedButton: HTMLButtonElement) {
