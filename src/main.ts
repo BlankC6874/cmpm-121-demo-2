@@ -113,7 +113,7 @@ class ToolPreview {
   updateSticker(sticker: string | null) {
     this.sticker = sticker;
   }
-
+  //hi
   updateColor(color: string) {
     this.color = color;
   }
